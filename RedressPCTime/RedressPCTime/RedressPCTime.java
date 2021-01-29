@@ -70,7 +70,7 @@ public class RedressPCTime {
 	protected static  int sleepTime = 120;
 	protected static boolean keepGetTime = true;
 	protected static Boolean justStart = true;
-	protected static String justtestgit;
+	protected static String justTestGit;
 
 	/**
 	 * Launch the application.
