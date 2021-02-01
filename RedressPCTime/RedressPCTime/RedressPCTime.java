@@ -42,6 +42,7 @@ import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.ShellAdapter;
 import org.eclipse.swt.events.ShellEvent;
 import org.eclipse.swt.graphics.Rectangle;
+import org.eclipse.swt.internal.win32.OS;
 import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.custom.StyledText;
 import org.eclipse.jface.text.TextViewer;
@@ -51,7 +52,10 @@ import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.custom.CLabel;
 
 /**
- * 
+ * 纠正电脑时间。适用于电脑里面的时间零件老化造成的时间不断小偏移
+ * 或者电脑中毒引起的时间不对
+ * 本软件需要网络支持
+ * 目前只支持windows。 未支持linux
  * @author bluecn
  * @Date 2021-1-28
  * @funtion 校正win系统的时间。linux涉及需要root权限,暂时没做
@@ -64,14 +68,15 @@ public class RedressPCTime {
 	private Button btnNewButton;
 	private Button btnNewButton_1;
 	private Button button;
-// 	protected adjustTime adtime;
-//	static List<adjustTime> list = new ArrayList<adjustTime>();
+
 	RedressPCTime mainPane;
 	protected static  int sleepTime = 120;
 	protected static boolean keepGetTime = true;
 	protected static Boolean justStart = true;
-	protected static String justTestGit;
-
+	protected static int lineCount = 0;
+	protected static int locatX = 200;
+	protected static int locatY = 200;
+	
 	/**
 	 * Launch the application.
 	 * @param args
@@ -101,7 +106,7 @@ public class RedressPCTime {
 		shell.setSize(366, 350);
 		shell.setText("win系统时间校正");
 		//取系统中预置的图标，省得测试运行时还得加个图标文件
-        shell.setImage(display.getSystemImage(SWT.ICON_WORKING));
+        shell.setImage(display.getSystemImage(SWT.ICON_INFORMATION));
         
       //构造系统栏控件
         final Tray tray = display.getSystemTray();
@@ -260,7 +265,7 @@ public class RedressPCTime {
 			@Override
 			public void widgetSelected(SelectionEvent event) {
 				
-				if(keepGetTime == false){
+				if(keepGetTime != true ){
 					keepGetTime = true;
 					new Thread(){
 						public void run(){
@@ -278,6 +283,12 @@ public class RedressPCTime {
 		shell.layout();
 		while (!shell.isDisposed()) {
 			if (!display.readAndDispatch()) {
+				
+//				keepGetTime = true;
+//				shell.setActive();
+				
+				//窗口始终在最前面
+//				OS.SetWindowPos(shell.handle , OS.HWND_TOPMOST, locatX , locatY , 366, 350 , SWT.NULL);
 				display.sleep();
 			}
 		}
@@ -286,11 +297,16 @@ public class RedressPCTime {
 		
 	}
 
-	
+	/**
+	 * 给日志文本框添加获得的时间
+	 * @param text 要添加的时间或日期
+	 */
 	private static void AppendText(String text) {
 		text_1.append(text + "\r\n");
-		if(text_1.getLineCount()>300){
+		lineCount++;
+		if(lineCount>300){
 			text_1.setText("");
+			lineCount = 0;
 		}
 //		text_1.append("\r\n");
 //		scrldfrmNewScrolledform.
@@ -324,9 +340,9 @@ public class RedressPCTime {
         Monitor monitor = shell.getMonitor();
         Rectangle bounds = monitor.getBounds ();
         Rectangle rect = shell.getBounds ();
-        int x = bounds.x + (bounds.width - rect.width) / 2;
-        int y = bounds.y + (bounds.height - rect.height) / 2;
-        shell.setLocation (x, y);
+        locatX = bounds.x + (bounds.width - rect.width) / 2;
+        locatY = bounds.y + (bounds.height - rect.height) / 2;
+        shell.setLocation (locatX, locatY);
     }
 
 	
@@ -335,11 +351,15 @@ public class RedressPCTime {
 		String keyUrl = "http://api.m.taobao.com/rest/api3.do?api=mtop.common.getTimestamp";
 		String rLine;	
 		
-		  while(keepGetTime){
+		  while(keepGetTime != false){
+			  keepGetTime = true;
 			  try{
 				  //开始网络请求
 				  URL url = new URL(keyUrl);
 				  HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
+				  //设置超时时间
+				  urlConnection.setConnectTimeout(3000);
+				  urlConnection.setReadTimeout(3000);
 				  InputStreamReader inputStreamReader = new InputStreamReader(urlConnection.getInputStream(),"utf-8");
 				  BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
 				  //读取网页内容
@@ -421,9 +441,17 @@ public class RedressPCTime {
 		                 }
 		             });
 
-				  
-				  
 		   		  se.printStackTrace();
+			  } catch(java.net.SocketTimeoutException ste){
+				  
+				  Display.getDefault().asyncExec(new Runnable() {
+		                 public void run() {
+		                     //对控件的操作代码
+		                	 RedressPCTime.AppendText("连接超时。");
+		                 }
+		             });
+
+		   		  ste.printStackTrace();
 			  } catch (Exception e2) {
 				  e2.printStackTrace();
 			  }
