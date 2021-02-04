@@ -2,13 +2,10 @@
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Button;
-import org.eclipse.swt.widgets.Composite;
 import org.eclipse.wb.swt.SWTResourceManager;
 
 
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.FileWriter;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -18,11 +15,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Menu;
@@ -31,25 +23,14 @@ import org.eclipse.swt.widgets.Monitor;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.swt.widgets.Tray;
 import org.eclipse.swt.widgets.TrayItem;
-import org.eclipse.swt.custom.ScrolledComposite;
-
 import org.eclipse.swt.events.MenuDetectListener;
 import org.eclipse.swt.events.MenuDetectEvent;
-import org.eclipse.swt.events.MouseAdapter;
-import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.ShellAdapter;
 import org.eclipse.swt.events.ShellEvent;
 import org.eclipse.swt.graphics.Rectangle;
-import org.eclipse.swt.internal.win32.OS;
-import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.custom.StyledText;
-import org.eclipse.jface.text.TextViewer;
-import org.eclipse.ui.forms.widgets.FormToolkit;
-import org.eclipse.ui.forms.widgets.ScrolledForm;
-import org.eclipse.swt.widgets.Combo;
-import org.eclipse.swt.custom.CLabel;
 
 /**
  * 纠正电脑时间。适用于电脑里面的时间零件老化造成的时间不断小偏移
@@ -77,6 +58,9 @@ public class RedressPCTime {
 	protected static int locatX = 200;
 	protected static int locatY = 200;
 	
+	static String oldTimeStamp = "0";
+	static String newTimeStamp = "0";
+	
 	/**
 	 * Launch the application.
 	 * @param args
@@ -85,9 +69,7 @@ public class RedressPCTime {
 		
 		RedressPCTime mainPane = new RedressPCTime();
 		
-		//启动线程校正时间
-//		list.add(adtime);
-		
+		//先启动新进程，再初始化窗口，才能正常运行
 		new Thread(){
 			public void run(){
 				AdjuTime();
@@ -95,6 +77,8 @@ public class RedressPCTime {
 		}.start();
 		
 		mainPane.initial();
+		
+
 		
 	}
 	
@@ -179,7 +163,9 @@ public class RedressPCTime {
 		btnNewButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent event) {
+				//终止进程
 				keepGetTime = false;
+				 //此处设置，为了让点击“继续校时”时可以校正一次日期
 				justStart = true;
 			}
 		});
@@ -201,15 +187,11 @@ public class RedressPCTime {
 //		com.setVisible(false);
 //		scrolledComposite.setContent(com);
 		
+		//加入 SWT.V_SCROLL  就创建了垂直滚动条，不需要ScrolledComposite
 		text_1 = new Text(shell, SWT.BORDER | SWT.WRAP | SWT.MULTI | SWT.V_SCROLL);
 		text_1.setFont(SWTResourceManager.getFont("微软雅黑", 12, SWT.NORMAL));
 		text_1.setBounds(20, 100, 308, 166);
 		
-		
-//		styledText = new StyledText(scrolledComposite, SWT.BORDER | SWT.V_SCROLL | SWT.H_SCROLL);
-//		styledText.setBounds(20, 100, 308, 166);
-//		styledText.setFont(SWTResourceManager.getFont("微软雅黑", 12, SWT.NORMAL));
-
 //		
 //		scrolledComposite.setContent(styledText);
 //		scrolledComposite.setExpandHorizontal(true);
@@ -233,6 +215,7 @@ public class RedressPCTime {
 			public void widgetSelected(SelectionEvent event) {
 				
 				 String setTime = text_2.getText().trim();
+				 //想用正则表达式匹配数字，结果没弄成功
 /*				 String matchResult = "";  
 				 //正则表达式匹配数字，以防乱输入
 			        Pattern pattern = Pattern.compile("[0-9]");  
@@ -265,6 +248,7 @@ public class RedressPCTime {
 			@Override
 			public void widgetSelected(SelectionEvent event) {
 				
+				//继续校时
 				if(keepGetTime != true ){
 					keepGetTime = true;
 					new Thread(){
@@ -279,14 +263,12 @@ public class RedressPCTime {
 		button.setText("\u7EE7\u7EED\u6821\u65F6");
 		
 		shell.open();
+		//置中
 		center(shell);
 		shell.layout();
 		while (!shell.isDisposed()) {
 			if (!display.readAndDispatch()) {
-				
-//				keepGetTime = true;
-//				shell.setActive();
-				
+						
 				//窗口始终在最前面
 //				OS.SetWindowPos(shell.handle , OS.HWND_TOPMOST, locatX , locatY , 366, 350 , SWT.NULL);
 				display.sleep();
@@ -299,7 +281,7 @@ public class RedressPCTime {
 
 	/**
 	 * 给日志文本框添加获得的时间
-	 * @param text 要添加的时间或日期
+	 * @param text 要添加的时间或日期或报错
 	 */
 	private static void AppendText(String text) {
 		text_1.append(text + "\r\n");
@@ -308,8 +290,6 @@ public class RedressPCTime {
 			text_1.setText("");
 			lineCount = 0;
 		}
-//		text_1.append("\r\n");
-//		scrldfrmNewScrolledform.
 
 	}
 	
@@ -343,16 +323,19 @@ public class RedressPCTime {
         locatX = bounds.x + (bounds.width - rect.width) / 2;
         locatY = bounds.y + (bounds.height - rect.height) / 2;
         shell.setLocation (locatX, locatY);
+        
+        
     }
 
-	
+	/**
+	 * 纠正时间部件，先获取网络时间，再纠正
+	 */
 	private static void AdjuTime() {
 
 		String keyUrl = "http://api.m.taobao.com/rest/api3.do?api=mtop.common.getTimestamp";
 		String rLine;	
 		
-		  while(keepGetTime != false){
-			  keepGetTime = true;
+		  while(keepGetTime){
 			  try{
 				  //开始网络请求
 				  URL url = new URL(keyUrl);
@@ -366,18 +349,20 @@ public class RedressPCTime {
 				  while ((rLine = bufferedReader.readLine()) != null){
 					   //判断目标节点是否出现
 					   if(rLine.contains("SUCCESS")){
-	//					    System.out.println(rLine);
+
 						    String[] temp = rLine.split("\"");
 	//					    System.out.println(temp[17]);
+						   
+						    //记录时间差，只有延时小的时候才用来纠正系统时间
+						    oldTimeStamp = newTimeStamp;
+						    newTimeStamp = temp[17];
+
 						    LocalDateTime localDateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(Long.parseLong(temp[17])), ZoneId.systemDefault());
-	//					    System.out.println(localDateTime);
+
 						    final LocalDate nowDate= localDateTime.toLocalDate();
 						    final LocalTime nowTime= localDateTime.toLocalTime();
 						    
-						    
-	//					    System.out.println(nowDate);
-//						    System.out.println(nowTime.toString());
-						    				   
+						    //swt的非UI进程操作UI进程时的标准写法				   
 					        Display.getDefault().asyncExec(new Runnable() {
 			                 public void run() {
 			                     //对控件的操作代码
@@ -388,40 +373,51 @@ public class RedressPCTime {
 			                	 }
 			                 	}
 					        });
+					      
 						    
 						     //修改系统时间
-							try{
-								/**
-								 * 获取操作系统的名称
-								 * */
-								String name = System.getProperty("os.name").toLowerCase();
-								if(name.contains("windows")){	// Window 操作系统
-									String cmd = "cmd.exe /c time " + nowTime.toString().substring(0, 8);
-									 Runtime.getRuntime().exec(cmd); // 修改时间
-									 if(justStart){
-										 cmd = "cmd.exe /c date " + nowDate.toString();
-										 Runtime.getRuntime().exec(cmd); // 修改日期
-										 justStart = false;
-									 }
+					        //两次时间值相差在120--240之间才改时间
+					        if( ( Long.parseLong(newTimeStamp) - Long.parseLong(oldTimeStamp) > Integer.toUnsignedLong(sleepTime) ) 
+					        		&& ( Long.parseLong(newTimeStamp) - Long.parseLong(oldTimeStamp) <Integer.toUnsignedLong(sleepTime + 120) ) ){
+
+					        	try{
+									/**
+									 * 获取操作系统的名称
+									 * */
+									String name = System.getProperty("os.name").toLowerCase();
+									if(name.contains("windows")){	// Window 操作系统
+										String cmd = "cmd.exe /c time " + nowTime.toString().substring(0, 8);
+										 Runtime.getRuntime().exec(cmd); // 修改时间
+										 if(justStart){
+											 cmd = "cmd.exe /c date " + nowDate.toString();
+											 Runtime.getRuntime().exec(cmd); // 修改日期
+											 justStart = false;
+										 }
+									}
+	//								if(name.contains("linux")){
+	//					                // Linux 系统 格式：yyyy-MM-dd HH:mm:ss   date -s "2017-11-11 11:11:11"
+	//					                FileWriter excutefw = new FileWriter("/usr/updateSysTime.sh");
+	//					                BufferedWriter excutebw=new BufferedWriter(excutefw);
+	//					                excutebw.write("date -s \"" + nowDate +" "+ nowTime +"\"\r\n");
+	//					                excutebw.close();
+	//					                excutefw.close();
+	//					                String cmd_date ="sh /usr/updateSysTime.sh";
+	//					                String res = runAndResult(cmd_date);
+	//					                System.out.println("cmd :" + cmd_date + " date :" + dataStr_ +" time :" + timeStr_);
+	//					                System.out.println("linux 时间修改" + res);
+	//								}
+									
+								}catch(Exception e){
+									e.printStackTrace();
 								}
-//								if(name.contains("linux")){
-//					                // Linux 系统 格式：yyyy-MM-dd HH:mm:ss   date -s "2017-11-11 11:11:11"
-//					                FileWriter excutefw = new FileWriter("/usr/updateSysTime.sh");
-//					                BufferedWriter excutebw=new BufferedWriter(excutefw);
-//					                excutebw.write("date -s \"" + nowDate +" "+ nowTime +"\"\r\n");
-//					                excutebw.close();
-//					                excutefw.close();
-//					                String cmd_date ="sh /usr/updateSysTime.sh";
-//					                String res = runAndResult(cmd_date);
-//					                System.out.println("cmd :" + cmd_date + " date :" + dataStr_ +" time :" + timeStr_);
-//					                System.out.println("linux 时间修改" + res);
-//								}
-								
-							}catch(Exception e){
-								e.printStackTrace();
-							}
+					        }
 					   }
 				  }
+				  
+				  //关闭管道资源，久用后莫名阻塞可能跟没关闭有关，前面网络阻塞已经settimeout
+				  if(bufferedReader !=null){bufferedReader.close();}
+				  if(inputStreamReader != null){inputStreamReader.close();}
+				  
 			  } catch(UnknownHostException uhe){
 
 	             Display.getDefault().asyncExec(new Runnable() {
