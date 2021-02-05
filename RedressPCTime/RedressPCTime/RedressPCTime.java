@@ -52,6 +52,7 @@ public class RedressPCTime {
 
 	RedressPCTime mainPane;
 	protected static  int sleepTime = 120;
+	protected static  int setsleepTime = 120;
 	protected static boolean keepGetTime = true;
 	protected static Boolean justStart = true;
 	protected static int lineCount = 0;
@@ -228,9 +229,9 @@ public class RedressPCTime {
 				 if( setTime != "" /*&& matchResult != "" */){ 
 					 
 					try {
-						sleepTime = Integer.parseInt(setTime);
+						setsleepTime = Integer.parseInt(setTime);
 						text_2.setText("");
-						label_1.setText("当前间隔时为：" + sleepTime);
+						label_1.setText("当前间隔时为：" + setsleepTime);
 					} catch (NumberFormatException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
@@ -379,7 +380,9 @@ public class RedressPCTime {
 					        //两次时间值相差在120--240之间才改时间
 					        if( ( Long.parseLong(newTimeStamp) - Long.parseLong(oldTimeStamp) > Integer.toUnsignedLong(sleepTime) ) 
 					        		&& ( Long.parseLong(newTimeStamp) - Long.parseLong(oldTimeStamp) <Integer.toUnsignedLong(sleepTime + 120) ) ){
-
+					        	
+					        	sleepTime = 5000;
+					        	
 					        	try{
 									/**
 									 * 获取操作系统的名称
@@ -389,6 +392,7 @@ public class RedressPCTime {
 										String cmd = "cmd.exe /c time " + nowTime.toString().substring(0, 8);
 										 Runtime.getRuntime().exec(cmd); // 修改时间
 										 if(justStart){
+											 
 											 cmd = "cmd.exe /c date " + nowDate.toString();
 											 Runtime.getRuntime().exec(cmd); // 修改日期
 											 justStart = false;
@@ -410,6 +414,8 @@ public class RedressPCTime {
 								}catch(Exception e){
 									e.printStackTrace();
 								}
+					        } else{
+					        	sleepTime = setsleepTime;
 					        }
 					   }
 				  }
@@ -417,6 +423,7 @@ public class RedressPCTime {
 				  //关闭管道资源，久用后莫名阻塞可能跟没关闭有关，前面网络阻塞已经settimeout
 				  if(bufferedReader !=null){bufferedReader.close();}
 				  if(inputStreamReader != null){inputStreamReader.close();}
+				  urlConnection.disconnect();
 				  
 			  } catch(UnknownHostException uhe){
 
