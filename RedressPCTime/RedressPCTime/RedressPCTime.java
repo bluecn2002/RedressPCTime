@@ -128,6 +128,7 @@ public class RedressPCTime {
  
         exitMenuItem.addSelectionListener(new SelectionAdapter() {
             public void widgetSelected(SelectionEvent event) {
+            	keepGetTime = false;
                 shell.dispose();
             }
         });
@@ -275,7 +276,7 @@ public class RedressPCTime {
 				display.sleep();
 			}
 		}
-		
+		keepGetTime = false;
 		display.dispose();
 		
 	}
